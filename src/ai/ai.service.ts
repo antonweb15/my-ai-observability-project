@@ -1,6 +1,7 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { CallbackHandler } from 'langfuse-langchain';
 import { ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
+import { TaskType } from "@google/generative-ai";
 import { SupabaseVectorStore } from "@langchain/community/vectorstores/supabase";
 import { createClient } from '@supabase/supabase-js';
 
@@ -49,7 +50,7 @@ export class AiService implements OnModuleInit {
     async testTrace() {
         const model = new ChatGoogleGenerativeAI({
             apiKey: process.env.GOOGLE_API_KEY,
-            model: "gemini-1.5-flash",
+            model: "gemini-3.1-flash-lite",
         });
 
         return await model.invoke("Hi! Reply 'Gemini online' if you see this.", {
@@ -83,9 +84,11 @@ export class AiService implements OnModuleInit {
     }
 
     async generateSeoWithRag(productName: string, category: string) {
+        // 1. Setup actual embeddings
         const embeddings = new GoogleGenerativeAIEmbeddings({
             apiKey: process.env.GOOGLE_API_KEY,
-            modelName: "gemini-embedding-001",
+            model: "gemini-embedding-001", // Actual model
+            taskType: TaskType.RETRIEVAL_QUERY,
         });
 
         const vectorStore = new SupabaseVectorStore(embeddings, {
@@ -94,53 +97,45 @@ export class AiService implements OnModuleInit {
             queryName: "match_documents",
         });
 
+        // 2. Search for context
         const docs = await vectorStore.similaritySearch(category, 2);
         const context = docs.map(d => d.pageContent).join("\n\n");
 
+        // 3. Get prompt from Langfuse (Removing hardcode)
+        // Ensure that a prompt with name "seo_description_generator" is created in Langfuse
+        // Теперь код всегда берет версию с тегом 'production'
+        const promptConfig = await this.langfuseHandler.langfuse.getPrompt("seo_description_generator", undefined, { label: "production" });
+        
+        const compiledPrompt = promptConfig.compile({
+            productName: productName,
+            category: category,
+            context: context
+        });
+
+        // 4. Initialize model
         const model = new ChatGoogleGenerativeAI({
             apiKey: process.env.GOOGLE_API_KEY,
-            model: "gemini-3.1-flash-lite",
+            model: "gemini-3.1-flash-lite", // or "gemini-3.1-flash-lite"
             temperature: 0.2,
         });
 
-        const prompt = `
-      You are a professional SEO copywriter. 
-      Use the STYLE EXAMPLES below to create a description.
-      
-      STYLE EXAMPLES:
-      ${context}
-
-      TASK:
-      Write an attractive SEO description for the product: "${productName}"
-      Category: "${category}"
-      
-      Return the response in JSON format:
-      {
-        "title": "title",
-        "description": "description"
-      }
-    `;
-
-        const response = await model.invoke(prompt, {
+        // 5. Generate with tracing
+        const response = await model.invoke(compiledPrompt, {
             callbacks: [this.langfuseHandler],
             runName: "RAG_SEO_Generation",
         });
 
-        // --- SCORING MODULE (Quality Check) ---
+        // 6. SCORING & QUALITY CHECK
+        const traceId = this.langfuseHandler.traceId;
+        const observationId = this.langfuseHandler.observationId || this.langfuseHandler.getLangchainRunId();
+
         try {
             const rawContent = response.content.toString();
-
-            // More reliable JSON extraction: searching for a block between ```json and ``` or just the first {
+            // Clear from markdown wrapper
             const jsonMatch = rawContent.match(/```json?([\s\S]*?)```/) || [null, rawContent];
             const cleanContent = jsonMatch[1].trim();
-
-            JSON.parse(cleanContent);
-
-            // Get ID from handler
-            const traceId = this.langfuseHandler.traceId;
-            // observationId in CallbackHandler often points to the last active step.
-            // If it's undefined, Langfuse will still show the score in the trace by traceId.
-            const observationId = this.langfuseHandler.observationId || this.langfuseHandler.getLangchainRunId();
+            
+            JSON.parse(cleanContent); // Validation check
 
             if (traceId) {
                 await this.langfuseHandler.langfuse.score({
@@ -148,18 +143,11 @@ export class AiService implements OnModuleInit {
                     value: 1,
                     traceId: traceId,
                     observationId: observationId,
-                    comment: "Response successfully parsed as JSON",
+                    comment: "JSON successfully parsed",
                     dataType: "NUMERIC"
                 });
-                
-                // For reliability in scripts, call flush immediately
-                await this.langfuseHandler.langfuse.flushAsync();
-                
-                console.log(`⭐️ Score linked to Trace: ${traceId} | Observation: ${observationId}`);
             }
         } catch (e) {
-            const traceId = this.langfuseHandler.traceId;
-            const observationId = this.langfuseHandler.observationId || this.langfuseHandler.getLangchainRunId();
             if (traceId) {
                 await this.langfuseHandler.langfuse.score({
                     name: "valid_json",
@@ -169,9 +157,10 @@ export class AiService implements OnModuleInit {
                     comment: `Parsing error: ${e.message}`,
                     dataType: "NUMERIC"
                 });
-                await this.langfuseHandler.langfuse.flushAsync();
             }
-            console.log(`😡 Quality score: 0 (Invalid JSON) | Trace ID: ${traceId || 'N/A'}`);
+        } finally {
+            // Guarantee data delivery to Langfuse
+            await this.langfuseHandler.langfuse.flushAsync();
         }
 
         return response;
