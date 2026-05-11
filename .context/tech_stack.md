@@ -1,0 +1,6 @@
+- **Runtime:** Node.js (NestJS)
+- **AI Orchestration:** LangChain.js
+- **Vector DB:** Supabase (pgvector)
+- **Observability:** Langfuse
+- **LLMs:** Anthropic (Claude 3.5 Sonnet)
+- **Language:** TypeScript
