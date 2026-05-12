@@ -91,6 +91,41 @@ npm run test
 npm run test:e2e
 ```
 
+## 🐳 Docker & CI/CD
+
+This project is containerized using Docker and automated with GitHub Actions.
+
+### Local Docker Build
+
+To build and run the application locally using Docker:
+
+```bash
+# Build the image
+docker build -t ai-observability-project .
+
+# Run the container
+docker run -p 3000:3000 --env-file .env ai-observability-project
+```
+
+### GitHub Container Registry (GHCR)
+
+The CI/CD pipeline automatically builds and pushes the Docker image to GHCR on every push to `main` or `master` branches.
+
+**To pull the latest image:**
+
+```bash
+docker pull ghcr.io/<your-github-username>/ai-observability-project:latest
+```
+
+**Deployment example (Azure Container Apps):**
+
+```bash
+az containerapp update \
+  --name ai-observability-app \
+  --resource-group your-resource-group \
+  --image ghcr.io/<your-github-username>/ai-observability-project:latest
+```
+
 ## 🗺 Roadmap
 
 - [ ] Support for OpenAI and Anthropic providers.
