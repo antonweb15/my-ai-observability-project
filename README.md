@@ -9,6 +9,15 @@ A NestJS-based project demonstrating AI observability using Langfuse, Google Gem
 - **Observability**: Complete trace tracking and quality scoring with Langfuse.
 - **Automated Scoring**: Checks if the AI response is valid JSON and logs scores to Langfuse.
 
+## Архитектура
+Проект использует принципы **Чистой архитектуры** (Core Architecture). Бизнес-логика вынесена в ядро, что делает её независимой от внешних сервисов.
+
+Подробная документация:
+- [Архитектура проекта](docs/architecture.md)
+- [Доменная модель](docs/domain-model.md)
+- [Workflow генерации SEO](docs/workflows/seo-generation.md)
+- [ADR 001: Использование Langfuse](docs/decisions/001-why-langfuse.md)
+
 ## Tech Stack
 
 - **Framework**: [NestJS](https://nestjs.com/)

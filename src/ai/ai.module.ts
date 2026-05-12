@@ -1,17 +1,13 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { AiService } from './ai.service';
-import { SupabaseModule } from '../supabase/supabase.module';
-import { LangfuseModule } from '../langfuse/langfuse.module';
 import { VectorStoreModule } from '../vector-store/vector-store.module';
-import { PromptModule } from '../prompt/prompt.module';
 import { GoogleLlmProvider } from './google-llm.provider';
+import { InfrastructureModule } from '../infrastructure/infrastructure.module';
 
 @Module({
   imports: [
-    SupabaseModule,
-    LangfuseModule,
     VectorStoreModule,
-    PromptModule,
+    forwardRef(() => InfrastructureModule),
   ],
   providers: [
     AiService,
@@ -20,5 +16,6 @@ import { GoogleLlmProvider } from './google-llm.provider';
       useClass: GoogleLlmProvider,
     },
   ],
+  exports: ['ILLM_PROVIDER'],
 })
 export class AiModule {}
