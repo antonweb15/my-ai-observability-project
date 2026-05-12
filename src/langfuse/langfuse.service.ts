@@ -29,7 +29,8 @@ export class LangfuseService implements OnModuleDestroy {
     comment?: string;
     dataType?: 'NUMERIC' | 'BOOLEAN' | 'CATEGORICAL';
   }): Promise<void> {
-    await this.handler.langfuse.score(params);
+    this.handler.langfuse.score(params);
+    return Promise.resolve();
   }
 
   async onModuleDestroy() {

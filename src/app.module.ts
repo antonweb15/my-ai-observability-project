@@ -9,7 +9,7 @@ import { InfrastructureModule } from './infrastructure/infrastructure.module';
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     AiModule,
-    InfrastructureModule
+    InfrastructureModule,
   ],
   controllers: [AppController],
   providers: [AppService],

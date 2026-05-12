@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { createClient } from '@supabase/supabase-js';
 
 @Injectable()
 export class SupabaseService {
-  private client: SupabaseClient;
+  private client: any;
 
   constructor() {
     this.client = createClient(
@@ -12,7 +12,7 @@ export class SupabaseService {
     );
   }
 
-  getClient(): SupabaseClient {
+  getClient(): any {
     return this.client;
   }
 }

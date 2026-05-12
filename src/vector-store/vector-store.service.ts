@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
-import { SupabaseVectorStore } from "@langchain/community/vectorstores/supabase";
+import { GoogleGenerativeAIEmbeddings } from '@langchain/google-genai';
+import { SupabaseVectorStore } from '@langchain/community/vectorstores/supabase';
 import { SupabaseService } from '../supabase/supabase.service';
-import { TaskType } from "@google/generative-ai";
-import { Document } from "@langchain/core/documents";
+import { TaskType } from '@google/generative-ai';
+import { Document } from '@langchain/core/documents';
 
 @Injectable()
 export class VectorStoreService {
@@ -12,20 +12,26 @@ export class VectorStoreService {
   private getEmbeddings(taskType?: TaskType) {
     return new GoogleGenerativeAIEmbeddings({
       apiKey: process.env.GOOGLE_API_KEY,
-      model: "gemini-embedding-001",
+      model: 'gemini-embedding-001',
       taskType: taskType,
     });
   }
 
   private getVectorStore(taskType?: TaskType) {
+    /* eslint-disable @typescript-eslint/no-unsafe-assignment */
     return new SupabaseVectorStore(this.getEmbeddings(taskType), {
       client: this.supabaseService.getClient(),
-      tableName: "documents",
-      queryName: "match_documents",
+      tableName: 'documents',
+      queryName: 'match_documents',
     });
+    /* eslint-enable @typescript-eslint/no-unsafe-assignment */
   }
 
-  async addDocuments(documents: Document[] | { pageContent: string; metadata: Record<string, any> }[]) {
+  async addDocuments(
+    documents:
+      | Document[]
+      | { pageContent: string; metadata: Record<string, any> }[],
+  ) {
     const vectorStore = this.getVectorStore();
     await vectorStore.addDocuments(documents);
   }

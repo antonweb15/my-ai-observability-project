@@ -1,5 +1,10 @@
+import { CallbackHandler } from 'langfuse-langchain';
+
 export interface ILlmService {
-  generate(prompt: string, options?: { runName?: string; callbacks?: any[] }): Promise<any>;
+  generate(
+    prompt: string,
+    options?: { runName?: string; callbacks?: CallbackHandler[] },
+  ): Promise<any>;
   score(params: {
     name: string;
     value: number;
@@ -7,6 +12,6 @@ export interface ILlmService {
     observationId?: string;
     comment?: string;
   }): Promise<void>;
-  getHandler(): any;
+  getHandler(): CallbackHandler;
   flush(): Promise<void>;
 }

@@ -6,7 +6,10 @@ import { PromptService } from '../../prompt/prompt.service';
 export class LangfusePromptAdapter implements IPromptProvider {
   constructor(private readonly promptService: PromptService) {}
 
-  async getPrompt(name: string, variables: Record<string, any>): Promise<string> {
+  async getPrompt(
+    name: string,
+    variables: Record<string, any>,
+  ): Promise<string> {
     return await this.promptService.getCompiledPrompt(name, variables);
   }
 }

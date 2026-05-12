@@ -9,7 +9,7 @@ export class SupabaseVectorStoreAdapter implements IVectorStore {
 
   async similaritySearch(query: string, k: number): Promise<ContextDocument[]> {
     const results = await this.vectorStoreService.similaritySearch(query, k);
-    return results.map(doc => ({
+    return results.map((doc) => ({
       pageContent: doc.pageContent,
       metadata: doc.metadata,
     }));

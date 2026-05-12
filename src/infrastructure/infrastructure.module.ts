@@ -13,7 +13,7 @@ import { AiModule } from '../ai/ai.module';
     VectorStoreModule,
     PromptModule,
     LangfuseModule,
-    forwardRef(() => AiModule)
+    forwardRef(() => AiModule),
   ],
   providers: [
     SupabaseVectorStoreAdapter,
@@ -26,7 +26,11 @@ import { AiModule } from '../ai/ai.module';
         promptProvider: LangfusePromptAdapter,
         llmService: LlmServiceAdapter,
       ) => new GenerateSeoUseCase(vectorStore, promptProvider, llmService),
-      inject: [SupabaseVectorStoreAdapter, LangfusePromptAdapter, LlmServiceAdapter],
+      inject: [
+        SupabaseVectorStoreAdapter,
+        LangfusePromptAdapter,
+        LlmServiceAdapter,
+      ],
     },
   ],
   exports: [GenerateSeoUseCase, LlmServiceAdapter],

@@ -5,10 +5,7 @@ import { GoogleLlmProvider } from './google-llm.provider';
 import { InfrastructureModule } from '../infrastructure/infrastructure.module';
 
 @Module({
-  imports: [
-    VectorStoreModule,
-    forwardRef(() => InfrastructureModule),
-  ],
+  imports: [VectorStoreModule, forwardRef(() => InfrastructureModule)],
   providers: [
     AiService,
     {

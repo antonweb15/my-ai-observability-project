@@ -11,11 +11,9 @@ export class PromptService {
     options: { label?: string; version?: string } = { label: 'production' },
   ): Promise<string> {
     const handler = this.langfuseService.getHandler();
-    const promptConfig = await handler.langfuse.getPrompt(
-      name,
-      undefined,
-      { label: options.label },
-    );
+    const promptConfig = await handler.langfuse.getPrompt(name, undefined, {
+      label: options.label,
+    });
     return promptConfig.compile(input);
   }
 }

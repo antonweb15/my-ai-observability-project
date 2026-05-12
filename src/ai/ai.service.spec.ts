@@ -13,15 +13,15 @@ describe('AiService', () => {
   beforeEach(async () => {
     generateSeoUseCase = {
       execute: jest.fn(),
-    } as any;
+    } as unknown as jest.Mocked<GenerateSeoUseCase>;
 
     llmService = {
       flush: jest.fn(),
-    } as any;
+    } as unknown as jest.Mocked<LlmServiceAdapter>;
 
     vectorStoreService = {
       addDocuments: jest.fn(),
-    } as any;
+    } as unknown as jest.Mocked<VectorStoreService>;
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
