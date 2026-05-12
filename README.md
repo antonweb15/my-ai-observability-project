@@ -1,86 +1,102 @@
-# AI Observability Project
+# AI Observability Framework
 
-A NestJS-based project demonstrating AI observability using Langfuse, Google Gemini (LangChain), and Supabase Vector Store.
+[![NestJS](https://img.shields.io/badge/Framework-NestJS-E0234E?logo=nestjs&logoColor=white)](https://nestjs.com/)
+[![LangChain](https://img.shields.io/badge/Orchestration-LangChain-1C3C3C?logo=langchain&logoColor=white)](https://js.langchain.com/)
+[![Gemini](https://img.shields.io/badge/LLM-Google%20Gemini-4285F4?logo=googlegemini&logoColor=white)](https://ai.google.dev/)
+[![Langfuse](https://img.shields.io/badge/Observability-Langfuse-000000?logo=langfuse&logoColor=white)](https://langfuse.com/)
 
-## Features
+A production-ready framework for building, observing, and optimizing AI-driven applications. This project leverages **Clean Architecture** to decouple business logic from AI providers and infrastructure.
 
-- **AI Pipeline**: Integrated with Google Gemini for text generation.
-- **RAG (Retrieval-Augmented Generation)**: Uses Supabase Vector Store to provide context to the LLM.
-- **Observability**: Complete trace tracking and quality scoring with Langfuse.
-- **Automated Scoring**: Checks if the AI response is valid JSON and logs scores to Langfuse.
+## 🚀 Key Features
 
-## Архитектура
-Проект использует принципы **Чистой архитектуры** (Core Architecture). Бизнес-логика вынесена в ядро, что делает её независимой от внешних сервисов.
+- **Advanced Observability**: Full-lifecycle tracing, latency monitoring, and cost tracking via Langfuse.
+- **RAG-Enabled**: Built-in Retrieval-Augmented Generation using Supabase Vector Store.
+- **Clean Architecture**: Decoupled "Core" logic from "Infrastructure" (LLMs, Databases).
+- **Automated Evaluation**: Real-time scoring of LLM outputs (JSON validation, relevance, etc.).
+- **Multi-Provider Ready**: Interface-driven design allows easy switching between Gemini, OpenAI, or Anthropic.
 
-Подробная документация:
-- [Архитектура проекта](docs/architecture.md)
-- [Доменная модель](docs/domain-model.md)
-- [Workflow генерации SEO](docs/workflows/seo-generation.md)
-- [ADR 001: Использование Langfuse](docs/decisions/001-why-langfuse.md)
+## 🛠 Tech Stack
 
-## Tech Stack
+- **Backend**: NestJS (Node.js)
+- **AI Engine**: LangChain & Google Generative AI
+- **Vector DB**: Supabase (PostgreSQL + pgvector)
+- **Monitoring**: Langfuse (Open-source observability)
+- **Validation**: Custom scoring pipelines
 
-- **Framework**: [NestJS](https://nestjs.com/)
-- **AI Orchestration**: [LangChain](https://js.langchain.com/)
-- **LLM**: [Google Gemini](https://ai.google.dev/)
-- **Observability**: [Langfuse](https://langfuse.com/)
-- **Database**: [Supabase](https://supabase.com/) (Vector Store)
+## 🏗 Architecture Overview
 
-## Getting Started
+The project follows the **Hexagonal/Clean Architecture** pattern:
+
+- **Core**: Domain entities and use-cases (the "Heart" of the app).
+- **Ports**: Interfaces defining how the Core communicates with the outside world.
+- **Infrastructure/Adapters**: Implementations for specific services (Supabase, Langfuse, LLM providers).
+- **Presentation**: Entry points (API Controllers, CLI).
+
+## 🚦 Getting Started
 
 ### Prerequisites
 
-- Node.js (v18+)
-- Supabase account and project
-- Google AI API Key (Gemini)
-- Langfuse account (self-hosted or cloud)
+- Node.js v18+ & npm
+- Access to Google AI Studio (API Key)
+- Supabase Project (with Vector enabled)
+- Langfuse Instance (Cloud or Self-hosted)
 
 ### Installation
 
-1. Clone the repository:
-   ```bash
-   git clone git@github.com:antonweb15/my-ai-observability-project.git
-   cd ai-observability
-   ```
+```bash
+# Clone the repository
+git clone git@github.com:antonweb15/ai-observability.git
+cd ai-observability
 
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
+# Install dependencies
+npm install
+```
 
-3. Setup environment variables:
-   Create a `.env` file based on the required configuration:
-   ```env
-   GOOGLE_API_KEY=your_google_api_key
-   
-   SUPABASE_URL=your_supabase_url
-   SUPABASE_SERVICE_ROLE_KEY=your_supabase_key
-   
-   LANGFUSE_PUBLIC_KEY=your_langfuse_public_key
-   LANGFUSE_SECRET_KEY=your_langfuse_secret_key
-   LANGFUSE_BASE_URL=https://cloud.langfuse.com
-   ```
+### Environment Configuration
 
-### Running the App
+Create a `.env` file in the root:
+
+```env
+# LLM Providers
+GOOGLE_API_KEY=your_key_here
+
+# Vector Storage
+SUPABASE_URL=your_url
+SUPABASE_SERVICE_ROLE_KEY=your_key
+
+# Observability
+LANGFUSE_PUBLIC_KEY=pk-...
+LANGFUSE_SECRET_KEY=sk-...
+LANGFUSE_BASE_URL=https://cloud.langfuse.com
+```
+
+### Running the System
 
 ```bash
-# development
-npm run start
-
-# watch mode
+# Development mode
 npm run start:dev
 
-# production mode
+# Production build
+npm run build
 npm run start:prod
 ```
 
-## TODO
+## 🧪 Testing & Quality
 
-- [ ] Add more comprehensive tests for the AI pipeline.
-- [ ] Implement advanced RAG techniques (e.g., hybrid search).
-- [ ] Add a frontend dashboard for viewing generated SEO content.
-- [ ] Expand the scoring module with more metrics (relevance, tone, etc.).
+```bash
+# Unit tests
+npm run test
 
-## License
+# E2E tests
+npm run test:e2e
+```
 
-This project is [UNLICENSED](LICENSE).
+## 🗺 Roadmap
+
+- [ ] Support for OpenAI and Anthropic providers.
+- [ ] Advanced hybrid search (Keyword + Vector).
+- [ ] UI Dashboard for prompt management.
+- [ ] Integration with LangGraph for complex agentic flows.
+
+---
+Managed with ❤️ for AI Engineers.
