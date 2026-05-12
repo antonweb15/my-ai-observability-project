@@ -31,6 +31,18 @@ jobs:
         run: npm run test
         env:
           NODE_OPTIONS: "--experimental-vm-modules"
+          NODE_ENV: test
+          SUPABASE_URL: "https://example.supabase.co"
+          SUPABASE_SERVICE_ROLE_KEY: "fake-key"
+          LANGFUSE_PUBLIC_KEY: "pk-fake"
+          LANGFUSE_SECRET_KEY: "sk-fake"
+          LANGFUSE_BASE_URL: "https://cloud.langfuse.com"
+          GOOGLE_API_KEY: "fake-google-key"
+      - name: Run e2e tests
+        run: npm run test:e2e
+        env:
+          NODE_OPTIONS: "--experimental-vm-modules"
+          NODE_ENV: test
           SUPABASE_URL: "https://example.supabase.co"
           SUPABASE_SERVICE_ROLE_KEY: "fake-key"
           LANGFUSE_PUBLIC_KEY: "pk-fake"
