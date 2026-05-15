@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit, MessageEvent } from '@nestjs/common';
+import { Injectable, OnModuleInit, MessageEvent, Logger } from '@nestjs/common';
 import { CallbackHandler } from 'langfuse-langchain';
 import { createClient } from '@supabase/supabase-js';
 import { Observable } from 'rxjs';
@@ -6,6 +6,7 @@ import axios from 'axios';
 
 @Injectable()
 export class AiService implements OnModuleInit {
+  private readonly logger = new Logger(AiService.name);
   private langfuseHandler: CallbackHandler;
   private supabaseClient;
   private readonly flowiseBaseUrl = process.env.FLOWISE_BASE_URL || 'http://localhost:3005';
@@ -24,7 +25,7 @@ export class AiService implements OnModuleInit {
   }
 
   async onModuleInit() {
-    console.log('🚀 AI Service initialized. Ready for streaming at POST /api/generate-seo');
+    this.logger.log('AI Service initialized. Ready for streaming at POST /api/generate-seo');
   }
 
   /**
@@ -49,7 +50,7 @@ export class AiService implements OnModuleInit {
         streaming: true
       };
 
-      console.log(`📡 [PRODUCTION] Sending request to: ${fullApiUrl}`);
+      this.logger.log(`Sending request to Flowise: ${fullApiUrl}`);
 
       axios({
         method: 'POST',
@@ -59,7 +60,7 @@ export class AiService implements OnModuleInit {
         timeout: 45000
       })
           .then((response) => {
-            console.log('🔥 [PRODUCTION] Network stream opened. Processing data...');
+            this.logger.log('Network stream opened. Processing data...');
 
             response.data.on('data', (chunk: Buffer) => {
               const rawChunk = chunk.toString().trim();
@@ -102,7 +103,7 @@ export class AiService implements OnModuleInit {
             });
 
             response.data.on('end', () => {
-              console.log('✅ [PRODUCTION] Data stream successfully finished.');
+              this.logger.log('Data stream successfully finished.');
               subscriber.complete();
             });
 
@@ -112,7 +113,7 @@ export class AiService implements OnModuleInit {
           })
           .catch((error) => {
             const status = error.response ? `Status: ${error.response.status}` : error.message;
-            console.error('❌ [PRODUCTION] Connection failed:', status);
+            this.logger.error(`Connection failed: ${status}`);
             subscriber.error(new Error(`Flowise connection failed: ${status}`));
           });
     });
