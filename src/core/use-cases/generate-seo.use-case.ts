@@ -11,12 +11,19 @@ export class GenerateSeoUseCase {
     private readonly llmService: ILlmService,
   ) {}
 
+  /**
+   * Main SEO generation scenario using RAG.
+   * 1. Context search in vector store.
+   * 2. Getting and compiling prompt from Langfuse.
+   * 3. Content generation via LLM with tracing.
+   * 4. JSON validation and automatic scoring in Langfuse.
+   */
   async execute(product: Product) {
-    // 1. Поиск контекста
+    // 1. Context search
     const docs = await this.vectorStore.similaritySearch(product.category, 2);
     const context = docs.map((d) => d.pageContent).join('\n\n');
 
-    // 2. Получение промпта
+    // 2. Getting prompt
     const prompt = await this.promptProvider.getPrompt(
       'seo_description_generator',
       {
@@ -26,14 +33,14 @@ export class GenerateSeoUseCase {
       },
     );
 
-    // 3. Генерация с трейсингом
+    // 3. Generation with tracing
     const handler = this.llmService.getHandler();
     const response = (await this.llmService.generate(prompt, {
       runName: 'RAG_SEO_Generation_UseCase',
       callbacks: [handler],
     })) as BaseMessage | string;
 
-    // 4. Валидация и скоринг
+    // 4. Validation and scoring
     const traceId = handler.traceId;
     const observationId =
       handler.observationId ||
@@ -56,7 +63,7 @@ export class GenerateSeoUseCase {
       const cleanContent = (jsonMatch[1] || '').trim();
 
       if (cleanContent) {
-        JSON.parse(cleanContent); // Проверка валидности
+        JSON.parse(cleanContent); // Validation check
       }
 
       if (traceId) {

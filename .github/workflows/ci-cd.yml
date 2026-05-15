@@ -11,7 +11,7 @@ permissions:
   packages: write
 
 jobs:
-  # Этап 1: Тестирование и Линтинг
+  # Stage 1: Testing and Linting
   test:
     name: Lint & Test
     runs-on: ubuntu-latest
@@ -34,7 +34,7 @@ jobs:
       - name: Run Tests
         run: npm run test --if-present
 
-  # Этап 2: Сборка и Публикация в GHCR
+  # Stage 2: Build and Publish to GHCR
   build-and-push:
     name: Build and Push Docker Image
     needs: test

@@ -5,6 +5,12 @@ import { LangfuseService } from '../langfuse/langfuse.service';
 export class PromptService {
   constructor(private langfuseService: LangfuseService) {}
 
+  /**
+   * Retrieves a compiled prompt from Langfuse.
+   * @param name Prompt name in the Langfuse system.
+   * @param input Object with variables for template substitution.
+   * @param options Optional: label or prompt version.
+   */
   async getCompiledPrompt(
     name: string,
     input: Record<string, any>,

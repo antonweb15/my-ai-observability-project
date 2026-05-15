@@ -13,6 +13,11 @@ export class LlmServiceAdapter implements ILlmService {
     @Inject('ILLM_PROVIDER') private readonly llmProvider: ILlmProvider,
   ) {}
 
+  /**
+   * Generates content based on a prompt.
+   * @param prompt Prepared prompt text.
+   * @param options Execution parameters (run name, callbacks for tracing).
+   */
   async generate(
     prompt: string,
     options?: { runName?: string; callbacks?: CallbackHandler[] },
@@ -28,6 +33,10 @@ export class LlmServiceAdapter implements ILlmService {
     });
   }
 
+  /**
+   * Sends a score to Langfuse for analyzing response quality.
+   * @param params Scoring parameters (metric name, value, trace ID, etc.).
+   */
   async score(params: {
     name: string;
     value: number;
@@ -44,10 +53,16 @@ export class LlmServiceAdapter implements ILlmService {
     });
   }
 
+  /**
+   * Gets the event handler for LangChain integration with Langfuse.
+   */
   getHandler() {
     return this.langfuseService.getHandler();
   }
 
+  /**
+   * Forces the upload of accumulated data to Langfuse.
+   */
   async flush(): Promise<void> {
     await this.langfuseService.flush();
   }

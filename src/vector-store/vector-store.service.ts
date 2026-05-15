@@ -9,6 +9,9 @@ import { Document } from '@langchain/core/documents';
 export class VectorStoreService {
   constructor(private supabaseService: SupabaseService) {}
 
+  /**
+   * Gets embeddings for text.
+   */
   private getEmbeddings(taskType?: TaskType) {
     return new GoogleGenerativeAIEmbeddings({
       apiKey: process.env.GOOGLE_API_KEY,
@@ -17,6 +20,9 @@ export class VectorStoreService {
     });
   }
 
+  /**
+   * Initializes Supabase vector store.
+   */
   private getVectorStore(taskType?: TaskType) {
     /* eslint-disable @typescript-eslint/no-unsafe-assignment */
     return new SupabaseVectorStore(this.getEmbeddings(taskType), {
@@ -27,6 +33,9 @@ export class VectorStoreService {
     /* eslint-enable @typescript-eslint/no-unsafe-assignment */
   }
 
+  /**
+   * Saves documents to the database.
+   */
   async addDocuments(
     documents:
       | Document[]
@@ -36,6 +45,9 @@ export class VectorStoreService {
     await vectorStore.addDocuments(documents);
   }
 
+  /**
+   * Searches for the most relevant documents by vector.
+   */
   async similaritySearch(query: string, k: number = 2) {
     const vectorStore = this.getVectorStore(TaskType.RETRIEVAL_QUERY);
     return await vectorStore.similaritySearch(query, k);

@@ -13,14 +13,23 @@ export class LangfuseService implements OnModuleDestroy {
     });
   }
 
+  /**
+   * Returns the LangChain Handler for automatic tracing.
+   */
   getHandler(): CallbackHandler {
     return this.handler;
   }
 
+  /**
+   * Asynchronous event queue flush.
+   */
   async flush(): Promise<void> {
     await this.handler.flushAsync();
   }
 
+  /**
+   * Records a score for a specific trace.
+   */
   async score(params: {
     name: string;
     value: number;

@@ -1,37 +1,37 @@
-# Этап 1: Сборка (Builder)
+# Stage 1: Build (Builder)
 FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Копируем файлы манифестов для установки зависимостей
+# Copy manifest files for dependency installation
 COPY package*.json ./
 
-# Устанавливаем все зависимости (включая devDependencies для сборки)
+# Install all dependencies (including devDependencies for build)
 RUN npm ci --legacy-peer-deps
 
-# Копируем исходный код
+# Copy source code
 COPY . .
 
-# Собираем приложение
+# Build application
 RUN npm run build
 
-# Этап 2: Запуск (Runner)
+# Stage 2: Run (Runner)
 FROM node:20-alpine AS runner
 
 WORKDIR /app
 
-# Устанавливаем переменную окружения
+# Set environment variable
 ENV NODE_ENV=production
 
-# Копируем только файлы для продакшн-зависимостей
+# Copy only production dependency files
 COPY package*.json ./
 RUN npm ci --only=production --legacy-peer-deps
 
-# Копируем собранный код из этапа сборки
+# Copy built code from build stage
 COPY --from=builder /app/dist ./dist
 
-# Открываем порт
+# Open port
 EXPOSE 3000
 
-# Запуск приложения
+# Run application
 CMD ["node", "dist/main"]

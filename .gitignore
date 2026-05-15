@@ -32,4 +32,6 @@ yarn-error.log*
 
 # misc
 /tmp
+.output.txt
+models_list.json
 README-RUS.md

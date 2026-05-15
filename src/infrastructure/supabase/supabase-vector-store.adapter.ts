@@ -7,6 +7,11 @@ import { ContextDocument } from '../../core/entities/seo.entity';
 export class SupabaseVectorStoreAdapter implements IVectorStore {
   constructor(private readonly vectorStoreService: VectorStoreService) {}
 
+  /**
+   * Searches for similar documents in the vector store.
+   * @param query Text query.
+   * @param k Number of documents to return.
+   */
   async similaritySearch(query: string, k: number): Promise<ContextDocument[]> {
     const results = await this.vectorStoreService.similaritySearch(query, k);
     return results.map((doc) => ({
@@ -15,6 +20,9 @@ export class SupabaseVectorStoreAdapter implements IVectorStore {
     }));
   }
 
+  /**
+   * Adds documents to the vector store.
+   */
   async addDocuments(documents: ContextDocument[]): Promise<void> {
     await this.vectorStoreService.addDocuments(documents);
   }

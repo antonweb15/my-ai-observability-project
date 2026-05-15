@@ -5,6 +5,9 @@ import { BaseChatModel } from '@langchain/core/language_models/chat_models';
 
 @Injectable()
 export class GoogleLlmProvider implements ILlmProvider {
+  /**
+   * Initializes and returns the Google Gemini model.
+   */
   getModel(
     config?: { model?: string; temperature?: number } & Record<string, unknown>,
   ): BaseChatModel {
