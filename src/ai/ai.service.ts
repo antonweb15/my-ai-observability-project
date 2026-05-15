@@ -3,13 +3,15 @@ import { CallbackHandler } from 'langfuse-langchain';
 import { createClient } from '@supabase/supabase-js';
 import { Observable } from 'rxjs';
 import axios from 'axios';
+import { EventEmitter } from 'events';
 
 @Injectable()
 export class AiService implements OnModuleInit {
   private readonly logger = new Logger(AiService.name);
   private langfuseHandler: CallbackHandler;
   private supabaseClient;
-  private readonly flowiseBaseUrl = process.env.FLOWISE_BASE_URL || 'http://localhost:3005';
+  private readonly flowiseBaseUrl =
+    process.env.FLOWISE_BASE_URL || 'http://localhost:3005';
 
   constructor() {
     this.langfuseHandler = new CallbackHandler({
@@ -24,15 +26,21 @@ export class AiService implements OnModuleInit {
     );
   }
 
-  async onModuleInit() {
-    this.logger.log('AI Service initialized. Ready for streaming at POST /api/generate-seo');
+  onModuleInit() {
+    this.logger.log(
+      'AI Service initialized. Ready for streaming at POST /api/generate-seo',
+    );
   }
 
   /**
    * Stream SEO generation via external Flowise service.
    * Uses axios to get data stream and RxJS Observable to pass it to the controller.
    */
-  streamSeoFromFlowise(dto: { product_name: string; category: string; keywords: string }): Observable<MessageEvent> {
+  streamSeoFromFlowise(dto: {
+    product_name: string;
+    category: string;
+    keywords: string;
+  }): Observable<MessageEvent> {
     return new Observable<MessageEvent>((subscriber) => {
       const baseUrl = process.env.FLOWISE_BASE_URL || 'http://127.0.0.1:3005';
       const chatflowId = 'b0d51168-0af2-4495-b7dc-35ad5b9c8456';
@@ -44,10 +52,10 @@ export class AiService implements OnModuleInit {
           promptValues: {
             product_name: dto.product_name,
             category: dto.category,
-            keywords: dto.keywords
-          }
+            keywords: dto.keywords,
+          },
         },
-        streaming: true
+        streaming: true,
       };
 
       this.logger.log(`Sending request to Flowise: ${fullApiUrl}`);
@@ -57,66 +65,78 @@ export class AiService implements OnModuleInit {
         url: fullApiUrl,
         data: payload,
         responseType: 'stream',
-        timeout: 45000
+        timeout: 45000,
       })
-          .then((response) => {
-            this.logger.log('Network stream opened. Processing data...');
+        .then((response: { data: any }) => {
+          this.logger.log('Network stream opened. Processing data...');
 
-            response.data.on('data', (chunk: Buffer) => {
-              const rawChunk = chunk.toString().trim();
-              if (!rawChunk) return;
+          const stream = response.data as EventEmitter;
+          stream.on('data', (chunk: Buffer) => {
+            const rawChunk = chunk.toString().trim();
+            if (!rawChunk) return;
 
-              // Check if data is in standard SSE format (data: ...)
-              if (rawChunk.startsWith('data:')) {
-                const lines = rawChunk.split('\n');
-                for (const line of lines) {
-                  if (line.startsWith('data:')) {
-                    const cleanedLine = line.replace('data:', '').trim();
-                    try {
-                      const parsed = JSON.parse(cleanedLine);
-                      // If SSE contains a ready json block from Structured Parser
-                      if (parsed.json) {
-                        subscriber.next({ data: JSON.stringify(parsed.json) } as MessageEvent);
-                      } else if (parsed.text) {
-                        subscriber.next({ data: parsed.text } as MessageEvent);
-                      }
-                    } catch {
-                      subscriber.next({ data: cleanedLine } as MessageEvent);
+            // Check if data is in standard SSE format (data: ...)
+            if (rawChunk.startsWith('data:')) {
+              const lines = rawChunk.split('\n');
+              for (const line of lines) {
+                if (line.startsWith('data:')) {
+                  const cleanedLine = line.replace('data:', '').trim();
+                  try {
+                    const parsed = JSON.parse(cleanedLine) as Record<
+                      string,
+                      any
+                    >;
+                    // If SSE contains a ready json block from Structured Parser
+                    if (parsed['json']) {
+                      subscriber.next({
+                        data: JSON.stringify(parsed['json']),
+                      });
+                    } else if (parsed['text']) {
+                      subscriber.next({ data: String(parsed['text']) });
                     }
+                  } catch {
+                    subscriber.next({ data: cleanedLine });
                   }
-                }
-              } else {
-                // CASE AS NOW: Flowise sent raw structured JSON chunk directly
-                try {
-                  const parsed = JSON.parse(rawChunk);
-                  if (parsed.json) {
-                    // Extract only clean SEO structure
-                    subscriber.next({ data: JSON.stringify(parsed.json) } as MessageEvent);
-                  } else {
-                    subscriber.next({ data: rawChunk } as MessageEvent);
-                  }
-                } catch {
-                  // If it's just text, send as is
-                  subscriber.next({ data: rawChunk } as MessageEvent);
                 }
               }
-            });
-
-            response.data.on('end', () => {
-              this.logger.log('Data stream successfully finished.');
-              subscriber.complete();
-            });
-
-            response.data.on('error', (err) => {
-              subscriber.error(new Error(`Stream error: ${err.message}`));
-            });
-          })
-          .catch((error) => {
-            const status = error.response ? `Status: ${error.response.status}` : error.message;
-            this.logger.error(`Connection failed: ${status}`);
-            subscriber.error(new Error(`Flowise connection failed: ${status}`));
+            } else {
+              // CASE AS NOW: Flowise sent raw structured JSON chunk directly
+              try {
+                const parsed = JSON.parse(rawChunk) as Record<string, any>;
+                if (parsed['json']) {
+                  // Extract only clean SEO structure
+                  subscriber.next({
+                    data: JSON.stringify(parsed['json']),
+                  });
+                } else {
+                  subscriber.next({ data: rawChunk });
+                }
+              } catch {
+                // If it's just text, send as is
+                subscriber.next({ data: rawChunk });
+              }
+            }
           });
+
+          stream.on('end', () => {
+            this.logger.log('Data stream successfully finished.');
+            subscriber.complete();
+          });
+
+          stream.on('error', (err: Record<string, any>) => {
+            subscriber.error(
+              new Error(`Stream error: ${String(err?.['message'])}`),
+            );
+          });
+        })
+        .catch((error: unknown) => {
+          const err = error as Record<string, any>;
+          const status = err?.['response']
+            ? `Status: ${String((err['response'] as Record<string, any>)['status'])}`
+            : String(err?.['message'] || err);
+          this.logger.error(`Connection failed: ${status}`);
+          subscriber.error(new Error(`Flowise connection failed: ${status}`));
+        });
     });
   }
-
 }

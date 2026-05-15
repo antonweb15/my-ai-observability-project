@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AiController } from './ai.controller';
 import { AiService } from './ai.service';
-import { HttpException, HttpStatus } from '@nestjs/common';
+import { MessageEvent, HttpException, HttpStatus } from '@nestjs/common';
 import { Response } from 'express';
 import { of, throwError } from 'rxjs';
 
@@ -49,41 +49,56 @@ describe('AiController', () => {
       return res as Response;
     };
 
-    it('should throw HttpException if validation fails', async () => {
+    it('should throw HttpException if validation fails', () => {
       const res = mockResponse();
       const invalidDto = { ...dto, product_name: '' };
 
-      await expect(controller.generateSeo(invalidDto, res)).rejects.toThrow(
+      expect(() => controller.generateSeo(invalidDto, res)).toThrow(
         HttpException,
       );
-      await expect(controller.generateSeo(invalidDto, res)).rejects.toThrow(
+      expect(() => controller.generateSeo(invalidDto, res)).toThrow(
         'Missing required fields',
       );
     });
 
-    it('should setup SSE headers and subscribe to service stream', async () => {
+    it('should setup SSE headers and subscribe to service stream', () => {
+      /* eslint-disable @typescript-eslint/unbound-method */
       const res = mockResponse();
       const mockEvent = { data: 'test data' };
-      service.streamSeoFromFlowise.mockReturnValue(of(mockEvent as any));
+      service.streamSeoFromFlowise.mockReturnValue(
+        of(mockEvent as MessageEvent),
+      );
 
-      await controller.generateSeo(dto, res);
+      controller.generateSeo(dto, res);
 
-      expect(res.setHeader).toHaveBeenCalledWith('Content-Type', 'text/event-stream');
+      expect(res.setHeader).toHaveBeenCalledWith(
+        'Content-Type',
+        'text/event-stream',
+      );
       expect(res.status).toHaveBeenCalledWith(HttpStatus.OK);
       expect(service.streamSeoFromFlowise).toHaveBeenCalledWith(dto);
-      expect(res.write).toHaveBeenCalledWith(`data: ${mockEvent.data}\n\n`);
+      expect(res.write).toHaveBeenCalledWith(
+        `data: ${String(mockEvent.data)}\n\n`,
+      );
       expect(res.end).toHaveBeenCalled();
+      /* eslint-enable @typescript-eslint/unbound-method */
     });
 
-    it('should handle stream errors', async () => {
+    it('should handle stream errors', () => {
+      /* eslint-disable @typescript-eslint/unbound-method */
       const res = mockResponse();
       const errorMessage = 'Stream failure';
-      service.streamSeoFromFlowise.mockReturnValue(throwError(() => new Error(errorMessage)));
+      service.streamSeoFromFlowise.mockReturnValue(
+        throwError(() => new Error(errorMessage)),
+      );
 
-      await controller.generateSeo(dto, res);
+      controller.generateSeo(dto, res);
 
-      expect(res.write).toHaveBeenCalledWith(`data: {"error": "${errorMessage}"}\n\n`);
+      expect(res.write).toHaveBeenCalledWith(
+        `data: {"error": "${errorMessage}"}\n\n`,
+      );
       expect(res.end).toHaveBeenCalled();
+      /* eslint-enable @typescript-eslint/unbound-method */
     });
   });
 });

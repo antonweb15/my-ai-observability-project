@@ -36,7 +36,7 @@ describe('AiService', () => {
       const mockStream = new EventEmitter();
       mockedAxios.mockResolvedValueOnce({
         data: mockStream,
-      } as any);
+      });
 
       const results: string[] = [];
       service.streamSeoFromFlowise(dto).subscribe({
@@ -51,7 +51,10 @@ describe('AiService', () => {
             done(e);
           }
         },
-        error: (err) => done(err),
+        error: (err: any) => {
+          const error = err as Error;
+          done(error);
+        },
       });
 
       // Use setImmediate to ensure the subscription is active before emitting
@@ -66,7 +69,7 @@ describe('AiService', () => {
       const mockStream = new EventEmitter();
       mockedAxios.mockResolvedValueOnce({
         data: mockStream,
-      } as any);
+      });
 
       const results: string[] = [];
       service.streamSeoFromFlowise(dto).subscribe({
@@ -81,11 +84,17 @@ describe('AiService', () => {
             done(e);
           }
         },
-        error: (err) => done(err),
+        error: (err: any) => {
+          const error = err as Error;
+          done(error);
+        },
       });
 
       setImmediate(() => {
-        mockStream.emit('data', Buffer.from(JSON.stringify({ json: { text: 'SEO Title' } })));
+        mockStream.emit(
+          'data',
+          Buffer.from(JSON.stringify({ json: { text: 'SEO Title' } })),
+        );
         mockStream.emit('end');
       });
     });
@@ -94,8 +103,10 @@ describe('AiService', () => {
       mockedAxios.mockRejectedValueOnce(new Error('Network Error'));
 
       service.streamSeoFromFlowise(dto).subscribe({
-        error: (err) => {
-          expect(err.message).toContain('Flowise connection failed: Network Error');
+        error: (err: any) => {
+          expect((err as Error).message).toContain(
+            'Flowise connection failed: Network Error',
+          );
           done();
         },
       });
