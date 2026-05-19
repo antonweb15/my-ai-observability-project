@@ -1,6 +1,6 @@
 import { Injectable, OnModuleInit, MessageEvent, Logger } from '@nestjs/common';
 import { CallbackHandler } from 'langfuse-langchain';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { Observable } from 'rxjs';
 import axios from 'axios';
 import { EventEmitter } from 'events';
@@ -12,7 +12,7 @@ import { SupabaseVectorStore } from '@langchain/community/vectorstores/supabase'
 export class AiService implements OnModuleInit {
   private readonly logger = new Logger(AiService.name);
   private langfuseHandler: CallbackHandler;
-  private supabaseClient;
+  private supabaseClient: SupabaseClient;
   private readonly flowiseBaseUrl =
     process.env.FLOWISE_BASE_URL || 'http://localhost:3005';
 
@@ -82,12 +82,13 @@ export class AiService implements OnModuleInit {
             timeout: 45000,
           });
         })
-        .then((response: any) => {
-          if (!response || !response.data) return;
+        .then((response) => {
+          const axiosResponse = response as { data: EventEmitter };
+          if (!axiosResponse || !axiosResponse.data) return;
 
           this.logger.log('Network stream opened. Processing data...');
 
-          const stream = response.data as EventEmitter;
+          const stream = axiosResponse.data;
           stream.on('data', (chunk: Buffer) => {
             const rawChunk = chunk.toString().trim();
             if (!rawChunk) return;
@@ -179,7 +180,11 @@ export class AiService implements OnModuleInit {
       const docs = await vectorStore.similaritySearch(query, 2);
       return docs.map((d) => d.pageContent).join('\n\n') || 'No style examples.';
     } catch (error) {
-      this.logger.warn(`RAG Search failed: ${error.message}. Proceeding without context.`);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      this.logger.warn(
+        `RAG Search failed: ${errorMessage}. Proceeding without context.`,
+      );
       return 'No style examples.';
     }
   }
