@@ -12,7 +12,7 @@ import { SupabaseVectorStore } from '@langchain/community/vectorstores/supabase'
 export class AiService implements OnModuleInit {
   private readonly logger = new Logger(AiService.name);
   private langfuseHandler: CallbackHandler;
-  private supabaseClient: SupabaseClient<any, 'public', 'public', any, any>;
+  private supabaseClient: SupabaseClient;
   private readonly flowiseBaseUrl =
     process.env.FLOWISE_BASE_URL || 'http://localhost:3005';
 
@@ -23,10 +23,11 @@ export class AiService implements OnModuleInit {
       baseUrl: process.env.LANGFUSE_BASE_URL || 'https://cloud.langfuse.com',
     });
 
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     this.supabaseClient = createClient(
       process.env.SUPABASE_URL || '',
       process.env.SUPABASE_SERVICE_ROLE_KEY || '',
-    ) as SupabaseClient<any, 'public', 'public', any, any>;
+    );
   }
 
   onModuleInit() {
@@ -172,7 +173,7 @@ export class AiService implements OnModuleInit {
       });
 
       const vectorStore = new SupabaseVectorStore(embeddings, {
-        client: this.supabaseClient,
+        client: this.supabaseClient as any,
         tableName: 'documents',
         queryName: 'match_documents',
       });
