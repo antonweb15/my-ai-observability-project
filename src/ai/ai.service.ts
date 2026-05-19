@@ -173,13 +173,16 @@ export class AiService implements OnModuleInit {
       });
 
       const vectorStore = new SupabaseVectorStore(embeddings, {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         client: this.supabaseClient as any,
         tableName: 'documents',
         queryName: 'match_documents',
       });
 
       const docs = await vectorStore.similaritySearch(query, 2);
-      return docs.map((d) => d.pageContent).join('\n\n') || 'No style examples.';
+      return (
+        docs.map((d) => d.pageContent).join('\n\n') || 'No style examples.'
+      );
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
