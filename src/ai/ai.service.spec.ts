@@ -105,7 +105,7 @@ describe('AiService', () => {
       service.streamSeoFromFlowise(dto).subscribe({
         error: (err: any) => {
           expect((err as Error).message).toContain(
-            'Flowise connection failed: Network Error',
+            'Flowise/RAG connection failed: Network Error',
           );
           done();
         },
