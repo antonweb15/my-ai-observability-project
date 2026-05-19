@@ -1,8 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { LangfuseService } from '../langfuse/langfuse.service';
 
 @Injectable()
 export class PromptService {
+  private readonly logger = new Logger(PromptService.name);
   constructor(private langfuseService: LangfuseService) {}
 
   /**
@@ -16,10 +17,13 @@ export class PromptService {
     input: Record<string, any>,
     options: { label?: string; version?: string } = { label: 'production' },
   ): Promise<string> {
+    this.logger.log(`Fetching prompt "${name}" for product: ${input.productName}`);
     const handler = this.langfuseService.getHandler();
     const promptConfig = await handler.langfuse.getPrompt(name, undefined, {
       label: options.label,
     });
-    return promptConfig.compile(input);
+    const compiled = promptConfig.compile(input);
+    this.logger.log(`Prompt "${name}" compiled successfully`);
+    return compiled;
   }
 }

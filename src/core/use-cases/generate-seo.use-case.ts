@@ -4,6 +4,7 @@ import { IPromptProvider } from '../ports/prompt-provider.port';
 import { ILlmService } from '../ports/llm-service.port';
 import { Product } from '../entities/seo.entity';
 import { Observable, finalize } from 'rxjs';
+import { Logger } from '@nestjs/common';
 
 export class GenerateSeoUseCase {
   constructor(
@@ -57,11 +58,13 @@ export class GenerateSeoUseCase {
           ? (response.content as string)
           : String(response);
 
-      const jsonMatch = rawContent.match(/```json?([\s\S]*?)```/) || [
-        null,
-        rawContent,
-      ];
-      const cleanContent = (jsonMatch[1] || '').trim();
+      // More robust JSON extraction from markdown
+      const jsonMatch =
+        rawContent.match(/```json\s*([\s\S]*?)\s*```/) ||
+        rawContent.match(/```\s*([\s\S]*?)\s*```/) ||
+        [null, rawContent];
+
+      const cleanContent = (jsonMatch[1] || rawContent).trim();
 
       if (cleanContent) {
         JSON.parse(cleanContent); // Validation check
@@ -95,11 +98,14 @@ export class GenerateSeoUseCase {
    * Streaming version of the SEO generation scenario.
    */
   async executeStream(product: Product): Promise<Observable<string>> {
+    const logger = new Logger(GenerateSeoUseCase.name);
     // 1. Context search
+    logger.log(`Starting RAG for product: ${product.name}`);
     const docs = await this.vectorStore.similaritySearch(product.category, 2);
     const context = docs.map((d) => d.pageContent).join('\n\n');
 
     // 2. Getting prompt
+    logger.log('Retrieving prompt from Langfuse...');
     const prompt = await this.promptProvider.getPrompt(
       'seo_description_generator',
       {
@@ -110,6 +116,7 @@ export class GenerateSeoUseCase {
     );
 
     // 3. Generation with tracing
+    logger.log('Starting LLM streaming...');
     const handler = this.llmService.getHandler();
 
     if (!this.llmService.stream) {
@@ -123,6 +130,7 @@ export class GenerateSeoUseCase {
       })
       .pipe(
         finalize(() => {
+          logger.log('Streaming process finished');
           // Automatic flushing and potentially scoring can be added here if needed
           this.llmService.flush().catch((err) => {
             console.error('Failed to flush LLM service:', err);

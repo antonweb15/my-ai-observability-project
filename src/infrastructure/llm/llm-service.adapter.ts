@@ -47,6 +47,7 @@ export class LlmServiceAdapter implements ILlmService {
     });
 
     return new Observable<string>((subscriber) => {
+      let buffer = '';
       model
         .stream(prompt, {
           callbacks: options?.callbacks,
@@ -54,11 +55,46 @@ export class LlmServiceAdapter implements ILlmService {
         })
         .then(async (stream) => {
           for await (const chunk of stream) {
-            subscriber.next(
+            const content =
               typeof chunk.content === 'string'
                 ? chunk.content
-                : JSON.stringify(chunk.content),
-            );
+                : JSON.stringify(chunk.content);
+
+            buffer += content;
+
+            // Remove full markdown blocks if present in buffer
+            if (buffer.includes('```json')) {
+              buffer = buffer.replace(/```json/g, '');
+            }
+            if (buffer.includes('```')) {
+              buffer = buffer.replace(/```/g, '');
+            }
+
+            // To avoid sending partial backticks that might be part of a future ```
+            // we only send content if it doesn't end with backticks (up to 2)
+            // unless the buffer is getting too long or the stream is about to end.
+            const match = buffer.match(/`{1,2}$/);
+            if (match) {
+              const toSend = buffer.slice(0, -match[0].length);
+              if (toSend) {
+                subscriber.next(toSend);
+                buffer = match[0];
+              }
+            } else {
+              if (buffer) {
+                subscriber.next(buffer);
+                buffer = '';
+              }
+            }
+          }
+
+          // Flush remaining buffer
+          if (buffer) {
+            // Final check for backticks in case they weren't part of a block
+            const finalCleaned = buffer.replace(/```json/g, '').replace(/```/g, '');
+            if (finalCleaned) {
+              subscriber.next(finalCleaned);
+            }
           }
           subscriber.complete();
         })

@@ -44,6 +44,7 @@ export class AiController {
 
     // 2. Execute Use Case with streaming
     try {
+      this.logger.log(`Starting stream for product: ${body.product_name}`);
       const stream$ = await this.generateSeoUseCase.executeStream({
         name: body.product_name,
         category: body.category,
@@ -51,6 +52,7 @@ export class AiController {
 
       const subscription = stream$.subscribe({
         next: (chunk: string) => {
+          this.logger.debug(`Sending chunk: ${chunk.substring(0, 20)}...`);
           res.write(`data: ${chunk}\n\n`);
         },
         error: (error: Error) => {
