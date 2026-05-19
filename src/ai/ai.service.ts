@@ -4,6 +4,9 @@ import { createClient } from '@supabase/supabase-js';
 import { Observable } from 'rxjs';
 import axios from 'axios';
 import { EventEmitter } from 'events';
+import { GoogleGenerativeAIEmbeddings } from '@langchain/google-genai';
+import { TaskType } from '@google/generative-ai';
+import { SupabaseVectorStore } from '@langchain/community/vectorstores/supabase';
 
 @Injectable()
 export class AiService implements OnModuleInit {
@@ -46,28 +49,42 @@ export class AiService implements OnModuleInit {
       const chatflowId = 'b0d51168-0af2-4495-b7dc-35ad5b9c8456';
       const fullApiUrl = `${baseUrl}/api/v1/prediction/${chatflowId}`;
 
-      const payload = {
-        question: `Generate SEO for product: ${dto.product_name}, category: ${dto.category}, keywords: ${dto.keywords}`,
-        overrideConfig: {
-          promptValues: {
-            product_name: dto.product_name,
-            category: dto.category,
-            keywords: dto.keywords,
-          },
-        },
-        streaming: true,
-      };
+      this.logger.log(
+        `🔍 [RAG] Starting context search for category: ${dto.category}`,
+      );
 
-      this.logger.log(`Sending request to Flowise: ${fullApiUrl}`);
+      this.getContextFromSupabase(dto.category)
+        .then((context) => {
+          this.logger.log(
+            `✅ [RAG] Context retrieved. Length: ${context.length}`,
+          );
 
-      axios({
-        method: 'POST',
-        url: fullApiUrl,
-        data: payload,
-        responseType: 'stream',
-        timeout: 45000,
-      })
-        .then((response: { data: any }) => {
+          const payload = {
+            question: `Generate SEO for product: ${dto.product_name}`,
+            overrideConfig: {
+              promptValues: {
+                product_name: dto.product_name,
+                category: dto.category,
+                keywords: dto.keywords,
+                context: context,
+              },
+            },
+            streaming: true,
+          };
+
+          this.logger.log(`Sending request to Flowise: ${fullApiUrl}`);
+
+          return axios({
+            method: 'POST',
+            url: fullApiUrl,
+            data: payload,
+            responseType: 'stream',
+            timeout: 45000,
+          });
+        })
+        .then((response: any) => {
+          if (!response || !response.data) return;
+
           this.logger.log('Network stream opened. Processing data...');
 
           const stream = response.data as EventEmitter;
@@ -134,9 +151,36 @@ export class AiService implements OnModuleInit {
           const status = err?.['response']
             ? `Status: ${String((err['response'] as Record<string, any>)['status'])}`
             : String(err?.['message'] || err);
-          this.logger.error(`Connection failed: ${status}`);
-          subscriber.error(new Error(`Flowise connection failed: ${status}`));
+          this.logger.error(`Connection or RAG failed: ${status}`);
+          subscriber.error(
+            new Error(`Flowise/RAG connection failed: ${status}`),
+          );
         });
     });
+  }
+
+  /**
+   * Retrieve context from Supabase based on semantic search
+   */
+  private async getContextFromSupabase(query: string): Promise<string> {
+    try {
+      const embeddings = new GoogleGenerativeAIEmbeddings({
+        apiKey: process.env.GOOGLE_API_KEY,
+        model: 'gemini-embedding-001',
+        taskType: TaskType.RETRIEVAL_QUERY,
+      });
+
+      const vectorStore = new SupabaseVectorStore(embeddings, {
+        client: this.supabaseClient,
+        tableName: 'documents',
+        queryName: 'match_documents',
+      });
+
+      const docs = await vectorStore.similaritySearch(query, 2);
+      return docs.map((d) => d.pageContent).join('\n\n') || 'No style examples.';
+    } catch (error) {
+      this.logger.warn(`RAG Search failed: ${error.message}. Proceeding without context.`);
+      return 'No style examples.';
+    }
   }
 }
