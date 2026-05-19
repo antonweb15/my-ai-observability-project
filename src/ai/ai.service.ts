@@ -23,7 +23,6 @@ export class AiService implements OnModuleInit {
       baseUrl: process.env.LANGFUSE_BASE_URL || 'https://cloud.langfuse.com',
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     this.supabaseClient = createClient(
       process.env.SUPABASE_URL || '',
       process.env.SUPABASE_SERVICE_ROLE_KEY || '',
@@ -173,7 +172,6 @@ export class AiService implements OnModuleInit {
       });
 
       const vectorStore = new SupabaseVectorStore(embeddings, {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         client: this.supabaseClient as any,
         tableName: 'documents',
         queryName: 'match_documents',

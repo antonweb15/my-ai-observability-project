@@ -24,13 +24,11 @@ export class VectorStoreService {
    * Initializes Supabase vector store.
    */
   private getVectorStore(taskType?: TaskType) {
-    /* eslint-disable @typescript-eslint/no-unsafe-assignment */
     return new SupabaseVectorStore(this.getEmbeddings(taskType), {
       client: this.supabaseService.getClient(),
       tableName: 'documents',
       queryName: 'match_documents',
     });
-    /* eslint-enable @typescript-eslint/no-unsafe-assignment */
   }
 
   /**
