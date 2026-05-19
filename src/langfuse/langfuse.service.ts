@@ -1,17 +1,11 @@
-import { Injectable, OnModuleDestroy } from '@nestjs/common';
+import { Injectable, OnModuleDestroy, Inject } from '@nestjs/common';
 import { CallbackHandler } from 'langfuse-langchain';
 
 @Injectable()
 export class LangfuseService implements OnModuleDestroy {
-  private handler: CallbackHandler;
-
-  constructor() {
-    this.handler = new CallbackHandler({
-      publicKey: process.env.LANGFUSE_PUBLIC_KEY,
-      secretKey: process.env.LANGFUSE_SECRET_KEY,
-      baseUrl: process.env.LANGFUSE_BASE_URL,
-    });
-  }
+  constructor(
+    @Inject('LANGFUSE_HANDLER') private readonly handler: CallbackHandler,
+  ) {}
 
   /**
    * Returns the LangChain Handler for automatic tracing.

@@ -4,17 +4,22 @@ import { SupabaseVectorStore } from '@langchain/community/vectorstores/supabase'
 import { SupabaseService } from '../supabase/supabase.service';
 import { TaskType } from '@google/generative-ai';
 import { Document } from '@langchain/core/documents';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class VectorStoreService {
-  constructor(private supabaseService: SupabaseService) {}
+  constructor(
+    private supabaseService: SupabaseService,
+    private readonly configService: ConfigService,
+  ) {}
 
   /**
    * Gets embeddings for text.
    */
   private getEmbeddings(taskType?: TaskType) {
     return new GoogleGenerativeAIEmbeddings({
-      apiKey: process.env.GOOGLE_API_KEY,
+      apiKey:
+        this.configService.get<string>('app.google.apiKey') || 'missing-key',
       model: 'gemini-embedding-001',
       taskType: taskType,
     });

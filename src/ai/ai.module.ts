@@ -1,20 +1,18 @@
 import { Module, forwardRef } from '@nestjs/common';
-import { AiService } from './ai.service';
 import { AiController } from './ai.controller';
-import { VectorStoreModule } from '../vector-store/vector-store.module';
 import { GoogleLlmProvider } from './google-llm.provider';
 import { InfrastructureModule } from '../infrastructure/infrastructure.module';
+import { JobsModule } from '../jobs/jobs.module';
 
 @Module({
-  imports: [VectorStoreModule, forwardRef(() => InfrastructureModule)],
+  imports: [forwardRef(() => InfrastructureModule), JobsModule],
   controllers: [AiController],
   providers: [
-    AiService,
     {
       provide: 'ILLM_PROVIDER',
       useClass: GoogleLlmProvider,
     },
   ],
-  exports: ['ILLM_PROVIDER', AiService],
+  exports: ['ILLM_PROVIDER'],
 })
 export class AiModule {}

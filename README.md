@@ -45,6 +45,7 @@ A production-ready framework for building, monitoring, and optimizing AI-powered
 - Google AI Studio access (API Key)
 - Supabase project (with Vector enabled)
 - Langfuse instance (Cloud or self-hosted)
+- Redis server (for background jobs)
 
 ### Installation
 
@@ -76,11 +77,18 @@ LANGFUSE_BASE_URL=https://cloud.langfuse.com
 
 # External Services
 FLOWISE_BASE_URL=http://localhost:3005
+
+# Redis (for background jobs)
+REDIS_HOST=localhost
+REDIS_PORT=6379
 ```
 
 ### Running the System
 
 ```bash
+# Start infrastructure (Redis)
+docker-compose up -d
+
 # Development mode
 npm run start:dev
 

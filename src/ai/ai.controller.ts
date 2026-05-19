@@ -3,71 +3,75 @@ import {
   Post,
   Body,
   Res,
-  HttpException,
   HttpStatus,
   Logger,
 } from '@nestjs/common';
-import { AiService } from './ai.service';
 import type { Response } from 'express';
-
-interface GenerateSeoDto {
-  product_name: string;
-  category: string;
-  keywords: string;
-}
+import { GenerateSeoUseCase } from '../core/use-cases/generate-seo.use-case';
+import { GenerateSeoDto } from './dto/generate-seo.dto';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 
 @Controller('api')
 export class AiController {
   private readonly logger = new Logger(AiController.name);
 
-  constructor(private readonly aiService: AiService) {}
+  constructor(
+    private readonly generateSeoUseCase: GenerateSeoUseCase,
+    @InjectQueue('seo-generation') private readonly seoQueue: Queue,
+  ) {}
 
   @Post('generate-seo')
-  generateSeo(@Body() body: GenerateSeoDto, @Res() res: Response) {
+  async generateSeo(@Body() body: GenerateSeoDto, @Res() res: Response) {
     this.logger.log(
       `Received generate-seo request for product: ${body.product_name}`,
     );
 
-    // 1. Input validation
-    if (!body.product_name || !body.category || !body.keywords) {
-      this.logger.warn('Validation failed: Missing required fields');
-      throw new HttpException(
-        'Missing required fields: product_name, category, keywords',
-        HttpStatus.BAD_REQUEST,
-      );
+    if (body.background) {
+      const job = await this.seoQueue.add('generate', body);
+      return res.status(HttpStatus.ACCEPTED).json({
+        jobId: job.id,
+        message: 'SEO generation task started in background',
+      });
     }
 
-    // 2. Set headers for forced streaming (SSE / Chunked Transfer)
+    // 1. Set headers for forced streaming (SSE / Chunked Transfer)
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
     res.setHeader('X-Accel-Buffering', 'no'); // Disable Nginx buffering
     res.status(HttpStatus.OK);
 
-    // 3. Subscribe to the stream from the service
-    const stream$ = this.aiService.streamSeoFromFlowise(body);
+    // 2. Execute Use Case with streaming
+    try {
+      const stream$ = await this.generateSeoUseCase.executeStream({
+        name: body.product_name,
+        category: body.category,
+      });
 
-    const subscription = stream$.subscribe({
-      next: (event: MessageEvent) => {
-        // Send a piece of text to the client directly into the open connection
-        res.write(`data: ${String(event.data)}\n\n`);
-      },
-      error: (error: Record<string, any>) => {
-        const message = String(error?.['message'] || error);
-        this.logger.error(`Stream error: ${message}`);
-        res.write(`data: {"error": "${message}"}\n\n`);
-        res.end();
-      },
-      complete: () => {
-        this.logger.log('Stream completed successfully');
-        // Close connection when AI finished generating
-        res.end();
-      },
-    });
+      const subscription = stream$.subscribe({
+        next: (chunk: string) => {
+          res.write(`data: ${chunk}\n\n`);
+        },
+        error: (error: Error) => {
+          this.logger.error(`Stream error: ${error.message}`);
+          res.write(`data: {"error": "${error.message}"}\n\n`);
+          res.end();
+        },
+        complete: () => {
+          this.logger.log('Stream completed successfully');
+          res.end();
+        },
+      });
 
-    // If the client disconnected themselves (closed tab) - unsubscribe
-    res.on('close', () => {
-      subscription.unsubscribe();
-    });
+      // If the client disconnected themselves (closed tab) - unsubscribe
+      res.on('close', () => {
+        subscription.unsubscribe();
+      });
+    } catch (error: any) {
+      this.logger.error(`Failed to start stream: ${error.message}`);
+      res.write(`data: {"error": "${error.message}"}\n\n`);
+      res.end();
+    }
   }
 }

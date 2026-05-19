@@ -3,6 +3,7 @@ import { IVectorStore } from '../ports/vector-store.port';
 import { IPromptProvider } from '../ports/prompt-provider.port';
 import { ILlmService } from '../ports/llm-service.port';
 import { Product } from '../entities/seo.entity';
+import { Observable, finalize } from 'rxjs';
 
 export class GenerateSeoUseCase {
   constructor(
@@ -88,5 +89,45 @@ export class GenerateSeoUseCase {
     }
 
     return response;
+  }
+
+  /**
+   * Streaming version of the SEO generation scenario.
+   */
+  async executeStream(product: Product): Promise<Observable<string>> {
+    // 1. Context search
+    const docs = await this.vectorStore.similaritySearch(product.category, 2);
+    const context = docs.map((d) => d.pageContent).join('\n\n');
+
+    // 2. Getting prompt
+    const prompt = await this.promptProvider.getPrompt(
+      'seo_description_generator',
+      {
+        productName: product.name,
+        category: product.category,
+        context: context,
+      },
+    );
+
+    // 3. Generation with tracing
+    const handler = this.llmService.getHandler();
+
+    if (!this.llmService.stream) {
+      throw new Error('Streaming is not supported by the LLM service adapter');
+    }
+
+    return this.llmService
+      .stream(prompt, {
+        runName: 'RAG_SEO_Streaming_UseCase',
+        callbacks: [handler],
+      })
+      .pipe(
+        finalize(() => {
+          // Automatic flushing and potentially scoring can be added here if needed
+          this.llmService.flush().catch((err) => {
+            console.error('Failed to flush LLM service:', err);
+          });
+        }),
+      );
   }
 }

@@ -5,6 +5,7 @@ import type { ILlmProvider } from '../../common/interfaces/llm-provider.interfac
 
 import { CallbackHandler } from 'langfuse-langchain';
 import { BaseMessage } from '@langchain/core/messages';
+import { Observable } from 'rxjs';
 
 @Injectable()
 export class LlmServiceAdapter implements ILlmService {
@@ -30,6 +31,40 @@ export class LlmServiceAdapter implements ILlmService {
     return await model.invoke(prompt, {
       callbacks: options?.callbacks,
       runName: options?.runName,
+    });
+  }
+
+  /**
+   * Generates a streaming response based on a prompt.
+   */
+  stream(
+    prompt: string,
+    options?: { runName?: string; callbacks?: CallbackHandler[] },
+  ): Observable<string> {
+    const model = this.llmProvider.getModel({
+      model: 'gemini-3.1-flash-lite',
+      temperature: 0.2,
+    });
+
+    return new Observable<string>((subscriber) => {
+      model
+        .stream(prompt, {
+          callbacks: options?.callbacks,
+          runName: options?.runName,
+        })
+        .then(async (stream) => {
+          for await (const chunk of stream) {
+            subscriber.next(
+              typeof chunk.content === 'string'
+                ? chunk.content
+                : JSON.stringify(chunk.content),
+            );
+          }
+          subscriber.complete();
+        })
+        .catch((err: unknown) => {
+          subscriber.error(err);
+        });
     });
   }
 

@@ -1,4 +1,5 @@
 import { CallbackHandler } from 'langfuse-langchain';
+import { Observable } from 'rxjs';
 
 /**
  * Port for interacting with language models.
@@ -11,6 +12,14 @@ export interface ILlmService {
     prompt: string,
     options?: { runName?: string; callbacks?: CallbackHandler[] },
   ): Promise<any>;
+
+  /**
+   * Generates a streaming response based on a prompt.
+   */
+  stream?(
+    prompt: string,
+    options?: { runName?: string; callbacks?: CallbackHandler[] },
+  ): Observable<string>;
 
   /**
    * Sends a quality score for LLM performance.
