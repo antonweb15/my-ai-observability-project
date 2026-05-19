@@ -26,7 +26,7 @@ export class AiService implements OnModuleInit {
     this.supabaseClient = createClient(
       process.env.SUPABASE_URL || '',
       process.env.SUPABASE_SERVICE_ROLE_KEY || '',
-    );
+    ) as SupabaseClient<any, 'public', 'public', any, any>;
   }
 
   onModuleInit() {
