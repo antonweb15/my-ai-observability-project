@@ -12,7 +12,7 @@ import { SupabaseVectorStore } from '@langchain/community/vectorstores/supabase'
 export class AiService implements OnModuleInit {
   private readonly logger = new Logger(AiService.name);
   private langfuseHandler: CallbackHandler;
-  private supabaseClient: SupabaseClient<any, any, any>;
+  private supabaseClient: SupabaseClient<any, any, any, any, any>;
   private readonly flowiseBaseUrl =
     process.env.FLOWISE_BASE_URL || 'http://localhost:3005';
 
